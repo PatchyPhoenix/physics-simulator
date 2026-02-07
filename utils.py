@@ -54,3 +54,22 @@ def arrayToVector(a: np.ndarray):
 
 def vectorToPosition(vector: 'Vector'):
     return Position(vector.x, vector.y, vector.z)
+
+
+def massConversion(mass):
+    return mass / (1.989 * (10 ** 30))
+
+def distanceConversion(distance):
+    return distance / (1.496 * (10 ** 8))
+
+def timeConversion(time):
+    return time / 86400
+
+def densityConversion(density):
+    return density * (1.685 * (10 ** -7))
+
+def velocityConversion(velocity):
+    return velocity * (5.775 * (10 ** -4))
+
+def accelerationConversion(acceleration):
+    return acceleration * (6.68 * (10 ** -9))

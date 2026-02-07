@@ -7,6 +7,8 @@ from utils import vectorToPosition
 # refer secret stash for formulas
 # wasteful calculations are performed
 
+# to be replaced by hermite (4th order)
+
 
 # public function (initiator)
 def calculateVerlet(body: Body, bodies: list, dt):

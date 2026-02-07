@@ -1,4 +1,5 @@
 import pygame
+import threading
 from vectors import Vector, Position
 from constants import *
 from body import Body
@@ -6,6 +7,7 @@ from utils import *
 import time
 import math
 from verlet import calculateVerlet, calculateTimeStep
+from collision import *
 
 #  IMPORTANT NOTE
 #
@@ -14,52 +16,11 @@ from verlet import calculateVerlet, calculateTimeStep
 #  making an adaptive time step for calculating physics can also help
 #
 
-
 # AYO NIG-
 # NOTE: the most expensive functions:  1. updateChunks   2. calculations
 
-
 # TODO: just for funnzies -> check (delta)E (change of energy) of the body (if it is 0 -> simulation is perfectly accurate, higher the value, more the inaccuracy)
 # also implement an adaptive time step
-
-# detect if body is in chunk 
-
-def check_collision_rect_circle(rect, circle_center, circle_radius):
-    circle_x, circle_y = circle_center
-    closest_x = max(rect.left, min(circle_x, rect.right))
-    closest_y = max(rect.top, min(circle_y, rect.bottom))
-    distance_squared = (circle_x - closest_x) ** 2 + (circle_y - closest_y) ** 2
-    return distance_squared < (circle_radius ** 2)
-
-# returns list of chunks in the quadrant in which the body is present
-
-
-# try to find an alternative (too many chunks are returned)
-def find_candidate_chunks(chunks_dict, circle_center, circle_radius, screen_center):
-    
-    circle_x, circle_y = circle_center
-    screen_center_x, screen_center_y = screen_center
-
-    candidate_quadrant_keys = []
-    
-    circle_rect = pygame.Rect(circle_x - circle_radius, circle_y - circle_radius,
-                              circle_radius * 2, circle_radius * 2)
-
-    if circle_rect.colliderect(pygame.Rect(0, 0, screen_center_x, screen_center_y)):
-        candidate_quadrant_keys.append('I')
-    if circle_rect.colliderect(pygame.Rect(screen_center_x, 0, screen_center_x, screen_center_y)):
-        candidate_quadrant_keys.append('II')
-    if circle_rect.colliderect(pygame.Rect(screen_center_x, screen_center_y, screen_center_x, screen_center_y)):
-        candidate_quadrant_keys.append('III')
-    if circle_rect.colliderect(pygame.Rect(0, screen_center_y, screen_center_x, screen_center_y)):
-        candidate_quadrant_keys.append('IV')
-
-    candidate_chunks = []
-    for quadrant_key in set(candidate_quadrant_keys):
-        candidate_chunks.extend(chunks_dict[quadrant_key])
-
-    return candidate_chunks
-
 
 
 class Simulation:
@@ -68,8 +29,10 @@ class Simulation:
         self.tickRate = 600 # 0 = max FPS (currently can't be used as 0)
         self.scale = 50000 # 1 pixel = 50000 km
         self.running = 0
+        self.lastRender = time.time()
+        self.threadRunning = threading.Event()
 
-        self.timeScale = 10e3 # s/s -> no unit  # 1 = real time, 0 = max time scale
+        self.timeScale = 1 # s/s -> no unit  # 1 = real time, 0 = max time scale
 
         # planetary bodies
         self.bodies = []
@@ -91,8 +54,9 @@ class Simulation:
 
         self.energy = 0
 
-        #self.font = pygame.font.SysFont("Roboto", 18)
+        self.dscale = 200
 
+        #self.font = pygame.font.SysFont("Roboto", 18)
         
     def start(self):
         self.running = 1
@@ -105,7 +69,8 @@ class Simulation:
         while self.running:
             self.clock.tick(self.tickRate)
             self.handleEvents()
-            self.update()
+            if (time.time() - self.lastRender) * 1000 >= 16:
+                self.update()
 
 
     def handleEvents(self):
@@ -136,9 +101,12 @@ class Simulation:
             
                 if event.y > 0:  # Zoom in
                     self.scale /= scale_change_factor
+                    self.dscale *= scale_change_factor
             
+
                 elif event.y < 0:  # Zoom out
                     self.scale *= scale_change_factor
+                    self.dscale /= scale_change_factor
                 
                 # Prevent scale from becoming zero or negative
                 if self.scale < 1:
@@ -285,11 +253,14 @@ class Simulation:
         self.calculations()
         self.draw()
         e = time.time()
+        self.lastRender = time.time()
         #print((e-s)*1000)
 
 
     def calculations(self):
         for body in self.bodies:
+            
+            # pre-verlet
             """acceleration = Vector(0, 0, 0)
             if body.energy != 0:
                 print(body.calculateEnergy(self.bodies) - body.energy)
@@ -325,8 +296,8 @@ class Simulation:
 
 
     def calculatePosition(self, body: Body):
-        screen_x = self.screenWidth // 2 + body.position.x / self.scale
-        screen_y = self.screenHeight // 2 + body.position.y / self.scale
+        screen_x = self.screenWidth // 2 + (body.position.x / 1) * self.dscale
+        screen_y = self.screenHeight // 2 + (body.position.y / 1) * self.dscale
         return (int(screen_x), int(screen_y))
 
 
@@ -350,34 +321,24 @@ class Simulation:
 if __name__ == "__main__":
     sim = Simulation()
     star = Body()
-    star.setMass(1.989e30)
-    star.setRadius(696340)
+    star.setMass(1)
+    star.setRadius(4.652e-3)
     star.setColor((255, 255, 50))
+    star.setVisualScale(10e7)
 
-    bh = Body()
-    bh.setDensity(4*(10**17))
-    bh.setRadius(6400)
-    bh.setColor((255, 255, 50))
-    bh.setVisualScale(100)
+    planet = Body(9.284e6) 
+    planet.setMass(3.003e-6)
+    planet.setPosition(Position(1, 0)) 
+    planet.setVelocity(Vector(0, 0.0172))
+    planet.setVisualScale(10e9)
+    planet.setColor((0,255,50))
 
-    planet = Body(5.51 * (10 ** 12)) 
-    planet.setMass(5.972e24)
-    planet.setPosition(Position(14.96e6, 0)) 
-    planet.setVelocity(Vector(0, 0))
-    planet.setVisualScale(50)
-    planet.setColor((255,0,0))
-
-    planet2 = Body(5.51 * (10 ** 12))
-    planet2.setMass(5.972e24)
-    planet2.setPosition(Position(-24.96e6, 10000))
-    planet2.setVisualScale(50)
-    planet2.setVelocity(Vector(0, 40))
+    print(planet.radius)
 
     sim.addBody(star)
     sim.addBody(planet)
 
-    planet.energy = planet.calculateEnergy(sim.bodies)
-    #sim.addBody(planet2)
+    #planet.energy = planet.calculateEnergy(sim.bodies)
 
     time.sleep(.2)
     sim.start()
