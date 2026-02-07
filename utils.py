@@ -1,6 +1,7 @@
 import math
 import vectors
 import numpy as np
+from constants import *
 from vectors import Vector, Position
 
 def calculateDensity(mass, volume):
@@ -27,6 +28,17 @@ def calculateRadius(volume):
 
 def calculateVolume(radius):
     return (4/3) * math.pi * (radius**3)
+
+
+def calculateEnergy(bodies):
+    e = 0
+    for body in bodies:
+        for x in bodies:
+            if x != body:
+                r = x.position - body.position
+                e += (G * body.mass * x.mass) / (2 * r.magnitude)
+
+    return e
 
 
 def representValue(value):

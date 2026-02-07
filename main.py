@@ -6,8 +6,10 @@ from body import Body
 from utils import *
 import time
 import math
-from verlet import calculateVerlet, calculateTimeStep
+#from verlet import calculateVerlet, calculateTimeStep
+from hermite import calculateConditions, calculateHermite, calculateTimeStep, predictAll
 from collision import *
+
 
 #  IMPORTANT NOTE
 #
@@ -21,6 +23,7 @@ from collision import *
 
 # TODO: just for funnzies -> check (delta)E (change of energy) of the body (if it is 0 -> simulation is perfectly accurate, higher the value, more the inaccuracy)
 # also implement an adaptive time step
+# parallel process for drawing :question:
 
 
 class Simulation:
@@ -30,9 +33,9 @@ class Simulation:
         self.scale = 50000 # 1 pixel = 50000 km
         self.running = 0
         self.lastRender = time.time()
-        self.threadRunning = threading.Event()
-
-        self.timeScale = 1 # s/s -> no unit  # 1 = real time, 0 = max time scale
+    
+        self.timeScale = 0.1 # s/s -> no unit  # 1 = real time, 0 = max time scale
+        self.simTime = 0
 
         # planetary bodies
         self.bodies = []
@@ -53,12 +56,25 @@ class Simulation:
         pygame.display.set_caption("Simulation")
 
         self.energy = 0
+        self.MOMENTUM = Vector()
+        self.MASS = 0
+        self.VELOCITY = Vector()
 
         self.dscale = 200
 
         #self.font = pygame.font.SysFont("Roboto", 18)
         
     def start(self):
+
+        for body in self.bodies:
+            calculateConditions(body, self.bodies)
+            self.MASS += body.mass
+            self.MOMENTUM += body.mass * body.velocity    
+        self.VELOCITY = self.MOMENTUM / self.MASS
+        
+        for body in self.bodies:
+            body.velocity -= self.VELOCITY
+    
         self.running = 1
         self.generateChunks()
         self.mainLoop()
@@ -69,12 +85,14 @@ class Simulation:
         while self.running:
             self.clock.tick(self.tickRate)
             self.handleEvents()
-            if (time.time() - self.lastRender) * 1000 >= 16:
-                self.update()
+            self.calculations()
+            if (time.time() - self.lastRender) >= 0.008:
+                self.draw()
+                self.lastRender = time.time()
+            print(self.bodies[1].calculateEnergy(self.bodies))
 
 
     def handleEvents(self):
-
         scale_change_factor = 1.1
 
         for event in pygame.event.get():
@@ -139,7 +157,6 @@ class Simulation:
 
 
     def draw(self):
-
         for body in self.bodies:
             x, y = self.calculatePosition(body)
             visual_radius = int(body.radius * body.visualScale / self.scale)
@@ -158,9 +175,7 @@ class Simulation:
     # chunk detection system (identify the chunks in which a body is updating)
         
     def updateChunks(self):
-
         loaded = []
-
 
         # the major computation is the chunk loop 
         # (each takes abt 0.01ms there are around 50-100 chunks each iteration (at basic zoom) meaning, it takes 0.5-1ms on its own)
@@ -196,7 +211,6 @@ class Simulation:
 
 
     def generateChunks(self):
-
         self.chunks = {
             "I":[],
             "II":[],
@@ -226,19 +240,14 @@ class Simulation:
             
     
     def drawGrid(self):
-
-        # TODO
-        # use chunks to improve performance
-
         colour = (25, 25, 25)
 
         for quad in self.chunks:
             for chunk in self.chunks[quad]:
-                pygame.draw.rect(self.screen,colour, chunk, 1)
+                pygame.draw.rect(self.screen, colour, chunk, 1)
 
 
     def drawInfo(self):
-
         scale_info = f"Scale: {representValue(self.scale)}km/pixel  TimeScale: {representValue(self.timeScale)}s/s"
         text = self.font.render(scale_info, True, (255, 255, 255))  
         self.screen.blit(text, (10, 10))
@@ -247,10 +256,9 @@ class Simulation:
         text = self.font.render(fps_info, True, (255,255,255))
         self.screen.blit(text, (self.screenWidth - text.get_width(), 10))
 
-
+    # deprecated
     def update(self):
         s = time.time()
-        self.calculations()
         self.draw()
         e = time.time()
         self.lastRender = time.time()
@@ -258,58 +266,21 @@ class Simulation:
 
 
     def calculations(self):
-        for body in self.bodies:
-            
-            # pre-verlet
-            """acceleration = Vector(0, 0, 0)
-            if body.energy != 0:
-                print(body.calculateEnergy(self.bodies) - body.energy)
+        targetDt = 0.008
+        achievedDt = 0
 
-            for otherBody in self.bodies:
-                if otherBody != body:
-                    r12 = otherBody.position - body.position
-
-                    mag = r12.magnitude
-                    unitVector = r12.unit()
-                    
-                    if mag == 0:
-                        a = 0
-
-                    # depth
-                    if otherBody.radius > mag:
-                        a = (G * otherBody.mass * mag) / (otherBody.radius**3)
-
-                    # height
-                    if otherBody.radius < mag:
-                        a = (G * otherBody.mass) / (mag) ** 2
-
-                    acceleration += unitVector * a"""
-                
-
-            # Calculate acceleration: a = F / m
-            
-            dt = 1.0 / self.tickRate  * self.timeScale  # make the physics independent of fps
-            calculateVerlet(body, self.bodies, dt)
-
-            dt = max(calculateTimeStep(self.bodies), 1.0 / self.tickRate) * self.timeScale
-           
+        while achievedDt < targetDt:
+            dt = max(calculateTimeStep(self.bodies), 0.001) * self.timeScale  # make the physics independent of fps
+            predictAll(self.bodies, dt)
+            for body in self.bodies:            
+                calculateHermite(body, self.bodies, dt)
+            achievedDt += dt
 
 
     def calculatePosition(self, body: Body):
         screen_x = self.screenWidth // 2 + (body.position.x / 1) * self.dscale
         screen_y = self.screenHeight // 2 + (body.position.y / 1) * self.dscale
         return (int(screen_x), int(screen_y))
-
-
-    def calculateEnergy(self):
-        e = 0
-        for body in self.bodies:
-            for x in self.bodies:
-                if x != body:
-                    r = x.position - body.position
-                    e += (G * body.mass * x.mass) / (2 * r.magnitude)
-
-        return e
 
 
     def exit(self):
@@ -338,7 +309,7 @@ if __name__ == "__main__":
     sim.addBody(star)
     sim.addBody(planet)
 
-    #planet.energy = planet.calculateEnergy(sim.bodies)
+    planet.energy = planet.calculateEnergy(sim.bodies)
 
     time.sleep(.2)
     sim.start()

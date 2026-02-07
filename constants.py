@@ -17,7 +17,7 @@ G = 0.000295912208  # Gravitational constant in AU^3/(SM*day^2)
 
 e = 10e-5
 
-eta = 0.02
+eta = 0.001
 
 # constant classes
 class Material:

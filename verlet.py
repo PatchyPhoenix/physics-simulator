@@ -98,7 +98,9 @@ def preCalculateVerletJerk(body: Body, otherBodies: list, dt):
 def calculateTimeStep(bodies: list):
     timeSteps = []
     for body in bodies:
-            timeStep =  eta * (body.acceleration.magnitude / body.jerk.magnitude)
-            timeSteps.append(timeStep)
-            
-    return min(timeSteps)
+            try:
+                timeStep =  eta * (body.acceleration.magnitude / (body.jerk.magnitude + 0.0000000000001) )
+                timeSteps.append(timeStep)
+            except:
+                pass
+    return min(min(timeSteps), 1)

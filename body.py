@@ -13,6 +13,7 @@ class Body:
 		self.radius = radius
 		# km
 		self.position = position
+		self.predictedPosition = Position()
 		
 		# represent the body as a different size (for better visualisation) (1 -> accurate size) (10 -> appears 10 times larger than it actually is)
 		self.visualScale = 1
@@ -20,6 +21,7 @@ class Body:
 
 		# km/s
 		self.velocity = Vector()
+		self.predictedVelocity = Vector()
 		# km/s^2
 		self.acceleration = Vector()
 
