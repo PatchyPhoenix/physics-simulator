@@ -1,8 +1,6 @@
 from vectors import Vector
 from constants import *
 from body import Body
-from utils import vectorToPosition
-
 
 # refer secret stash for formulas
 # wasteful calculations are performed
@@ -20,7 +18,7 @@ def calculateHalfStepVelocity(body: Body, dt):
 
 # position after full timestep
 def calculateFullStepPosition(body: Body, halfStepVelocity, dt):
-    return vectorToPosition(body.position + (halfStepVelocity * dt))
+    return (body.position + (halfStepVelocity * dt))
 
 # velocity after full timestep
 def calculateFullStepVelocity(body: Body, halfStepVelocity, dt):

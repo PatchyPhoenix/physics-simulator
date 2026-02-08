@@ -1,5 +1,5 @@
 # units
- 
+
 """
 
 1 AU = 1.496 * 10 ** 8 km
@@ -15,7 +15,7 @@
 G = 0.000295912208  # Gravitational constant in AU^3/(SM*day^2)
 # 1 km^3 = 1e9 m^3, so we multiply by 1e-9 to convert to km^3
 
-e = 10e-5
+e = 10e-3
 
 eta = 0.001
 

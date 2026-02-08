@@ -1,7 +1,6 @@
 import math
 import numpy as np
 from constants import *
-from vectors import Vector
 
 def calculateDensity(mass, volume):
     if volume == 0:
@@ -56,9 +55,6 @@ def unit(a: np.ndarray):
     if mag == 0:
         return np.zeros_like(a)
     return a / mag
-
-def arrayToVector(a: np.ndarray):
-    return Vector(a[0], a[1], a[2])
 
 def massConversion(mass):
     return mass / (1.989 * (10 ** 30))

@@ -26,16 +26,18 @@ from collision import *
 
 
 class Simulation:
-    def __init__(self):
+    def __init__(self, benchmark=False):
 
         self.tickRate = 600 # 0 = max FPS (currently can't be used as 0)
         self.scale = 50000 # 1 pixel = 50000 km
         self.running = 0
         self.lastRender = time.time()
+        self.benchmark = benchmark
     
         self.timeScale = 1 # s/s -> no unit  # 1 = real time, 0 = max time scale
         self.simTime = 0
-        self.avgFPS = 0
+        self.frames = 0
+        self.cycles = 0
 
         # planetary bodies
         self.bodies = []
@@ -83,17 +85,20 @@ class Simulation:
     def mainLoop(self):
         self.refresh()
         while self.running:
-            self.clock.tick(self.tickRate)
-            if self.avgFPS == 0:
-                self.avgFPS = int(self.clock.get_fps())
-            else:
-                self.avgFPS = (self.avgFPS + int(self.clock.get_fps())) // 2
-            self.handleEvents()
-            self.calculations()
-            if (time.time() - self.lastRender) >= 0.008:
-                self.draw()
-                self.lastRender = time.time()
+            try:    
+                self.clock.tick(self.tickRate)
+                self.frames += int(self.clock.get_fps())
+                self.cycles += 1
+                self.handleEvents()
+                self.calculations()
+                if (time.time() - self.lastRender) >= 0.008:
+                    self.draw()
+                    self.lastRender = time.time()
 
+                if self.benchmark and self.simTime >= 150:
+                    self.exit()
+            except:
+                pass
 
     def handleEvents(self):
         scale_change_factor = 1.1
@@ -276,6 +281,7 @@ class Simulation:
             for body in self.bodies:            
                 calculateHermite(body, self.bodies, dt)
             achievedDt += dt
+        self.simTime += achievedDt
 
 
     def calculatePosition(self, body: Body):
@@ -287,8 +293,6 @@ class Simulation:
     def exit(self):
         self.running = 0
         pygame.quit()
-        print("Average FPS: ", self.avgFPS)
-        exit()
 
 
 if __name__ == "__main__":
@@ -301,8 +305,8 @@ if __name__ == "__main__":
 
     planet = Body(9.284e6) 
     planet.setMass(3.003e-6)
-    planet.setPosition(Vector(1, 0)) 
-    planet.setVelocity(Vector(0, 0.0172))
+    planet.setPosition(Vector(np.array([1, 0, 0.0], dtype='float64'))) 
+    planet.setVelocity(Vector(np.array([0, 0.0172, 0.0], dtype='float64')))
     planet.setVisualScale(10e9)
     planet.setColor((0,255,50))
 
