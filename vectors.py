@@ -76,7 +76,7 @@ class Vector:
     def unit(self):
         if self.magnitude == 0:
             print("Magnitude of vector is 0. Zero vector used.")
-            return Position()
+            return Vector()
         return self / self.magnitude
 
 
@@ -95,19 +95,3 @@ class Vector:
         cos_theta = dot_product / magnitudes
         cos_theta = np.clip(cos_theta, -1.0, 1.0)
         return math.acos(cos_theta)
-    
-    
-
-class Position(Vector):
-    def updateX(self, x=0.0):
-        self.pos[0] = x
-
-
-    def updateY(self, y=0.0):
-        self.pos[1] = y
-
-
-    def update(self, x=0.0, y=0.0, z=0.0):
-        self.pos[0] = x
-        self.pos[1] = y
-        self.pos[2] = z

@@ -1,4 +1,4 @@
-from vectors import Vector, Position
+from vectors import Vector
 from constants import *
 from body import Body
 from utils import vectorToPosition

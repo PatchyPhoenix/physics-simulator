@@ -1,8 +1,7 @@
 import math
-import vectors
 import numpy as np
 from constants import *
-from vectors import Vector, Position
+from vectors import Vector
 
 def calculateDensity(mass, volume):
     if volume == 0:
@@ -58,15 +57,8 @@ def unit(a: np.ndarray):
         return np.zeros_like(a)
     return a / mag
 
-def arrayToPosition(a: np.ndarray):
-    return vectors.Position(a[0], a[1], a[2])
-
 def arrayToVector(a: np.ndarray):
-    return vectors.Vector(a[0], a[1], a[2])
-
-def vectorToPosition(vector: 'Vector'):
-    return Position(vector.x, vector.y, vector.z)
-
+    return Vector(a[0], a[1], a[2])
 
 def massConversion(mass):
     return mass / (1.989 * (10 ** 30))

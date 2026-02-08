@@ -1,12 +1,11 @@
 import pygame
 import threading
-from vectors import Vector, Position
+from vectors import Vector
 from constants import *
 from body import Body
 from utils import *
 import time
 import math
-#from verlet import calculateVerlet, calculateTimeStep
 from hermite import calculateConditions, calculateHermite, calculateTimeStep, predictAll
 from collision import *
 
@@ -34,8 +33,9 @@ class Simulation:
         self.running = 0
         self.lastRender = time.time()
     
-        self.timeScale = 0.1 # s/s -> no unit  # 1 = real time, 0 = max time scale
+        self.timeScale = 1 # s/s -> no unit  # 1 = real time, 0 = max time scale
         self.simTime = 0
+        self.avgFPS = 0
 
         # planetary bodies
         self.bodies = []
@@ -84,24 +84,25 @@ class Simulation:
         self.refresh()
         while self.running:
             self.clock.tick(self.tickRate)
+            if self.avgFPS == 0:
+                self.avgFPS = int(self.clock.get_fps())
+            else:
+                self.avgFPS = (self.avgFPS + int(self.clock.get_fps())) // 2
             self.handleEvents()
             self.calculations()
             if (time.time() - self.lastRender) >= 0.008:
                 self.draw()
                 self.lastRender = time.time()
-            print(self.bodies[1].calculateEnergy(self.bodies))
 
 
     def handleEvents(self):
         scale_change_factor = 1.1
 
         for event in pygame.event.get():
-
             if event.type == pygame.QUIT:
                 self.exit()
             
             elif event.type == pygame.KEYDOWN:
-            
                 if event.key == pygame.K_ESCAPE:
                     self.exit()
             
@@ -286,6 +287,7 @@ class Simulation:
     def exit(self):
         self.running = 0
         pygame.quit()
+        print("Average FPS: ", self.avgFPS)
         exit()
 
 
@@ -299,7 +301,7 @@ if __name__ == "__main__":
 
     planet = Body(9.284e6) 
     planet.setMass(3.003e-6)
-    planet.setPosition(Position(1, 0)) 
+    planet.setPosition(Vector(1, 0)) 
     planet.setVelocity(Vector(0, 0.0172))
     planet.setVisualScale(10e9)
     planet.setColor((0,255,50))

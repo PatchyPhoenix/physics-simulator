@@ -1,10 +1,10 @@
 import math
 import utils
-from vectors import Vector, Position
+from vectors import Vector
 from constants import G
 
 class Body:
-	def __init__(self, density=None, mass=None, radius=None, position=Position()):
+	def __init__(self, density=None, mass=None, radius=None, position=Vector()):
 		# kg/m^3
 		self.density = density
 		# kg
@@ -13,7 +13,7 @@ class Body:
 		self.radius = radius
 		# km
 		self.position = position
-		self.predictedPosition = Position()
+		self.predictedPosition = Vector()
 		
 		# represent the body as a different size (for better visualisation) (1 -> accurate size) (10 -> appears 10 times larger than it actually is)
 		self.visualScale = 1
@@ -55,8 +55,8 @@ class Body:
 		self.visualScale = scale
 
 
-	def setPosition(self, position: 'Position'):
-		if isinstance(position, Position):
+	def setPosition(self, position: 'Vector'):
+		if isinstance(position, Vector):
 			self.position = position
 		else:
 			raise TypeError("Position must be an instance of the Position class")

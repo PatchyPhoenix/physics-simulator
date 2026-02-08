@@ -1,7 +1,6 @@
-from vectors import Vector, Position
+from vectors import Vector
 from constants import *
 from body import Body
-from utils import vectorToPosition
 
 
 def calculateHermite(body: Body, bodies: list, dt: int):
@@ -26,7 +25,7 @@ def calculateHermite(body: Body, bodies: list, dt: int):
             
         correctedVel = body.velocity + (body.acceleration + futureAcc)*dt/2 + (body.jerk - futureJerk)*(dt**2)/12
         correctedPos = predictedPos + (body.acceleration - futureAcc)*(dt**2) / 12 + (body.jerk + futureJerk)*(dt**3) / 120
-        body.setPosition(vectorToPosition(correctedPos))
+        body.setPosition(correctedPos)
         body.setVelocity(correctedVel)
         body.setAcceleration(futureAcc)
         body.setJerk(futureJerk)
