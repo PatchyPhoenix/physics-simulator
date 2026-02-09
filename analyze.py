@@ -11,14 +11,9 @@ with open(f'data/{name}.dat', 'rb') as f:
     data = pickle.load(f)
     l1 = []
     l2 = []
-    for x in data:
+    for x, y in data.items():
         l1.append(x)   
-        if name.endswith("g"):
-            l2.append(data[x])
-        else:
-            l2.append(data[x][0])
-    with open("have fun da.txt", "w") as d:
-        d.write(str(l2))
+        l2.append(y)
     y = np.array(l2)
     x = np.array(l1)
     plt.plot(x, y)
@@ -36,6 +31,17 @@ with open(f'data/{name}.dat', 'rb') as f:
 
     elif name.endswith("a"):
        plt.ylabel("Acceleration")
+
+    elif name.endswith("ee"):
+        plt.ylabel("Relative Error (Energy)")
+
+    elif name.endswith("e"):
+       plt.ylabel("Energy")
+
+    elif name.endswith("sp"):
+        plt.ylabel("Softening Parameter")
+
+    #plt.ylim(-1, 1)
 
     plt.show()
 

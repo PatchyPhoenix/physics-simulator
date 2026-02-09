@@ -8,6 +8,7 @@ import time
 import math
 from hermite import calculateConditions, calculateHermite, calculateTimeStep, predictAll
 from collision import *
+import dataCollection
 
 
 #  IMPORTANT NOTE
@@ -26,18 +27,26 @@ from collision import *
 
 
 class Simulation:
-    def __init__(self, benchmark=False):
+    def __init__(self, benchmark=False, dataDump=False):
 
         self.tickRate = 600 # 0 = max FPS (currently can't be used as 0)
         self.scale = 50000 # 1 pixel = 50000 km
         self.running = 0
         self.lastRender = time.time()
+        self.renderTarget = 0.008
         self.benchmark = benchmark
+        self.dataDump = dataDump
+        self.energyData = dataCollection.StoreDict()
+        self.relativeEnergyData = dataCollection.StoreDict()
+        self.softeningData = dataCollection.StoreDict()
+        self.observedBody = None
     
         self.timeScale = 1 # s/s -> no unit  # 1 = real time, 0 = max time scale
         self.simTime = 0
         self.frames = 0
         self.cycles = 0
+        self.initialEnergy = 0
+        self.energy = 0
 
         # planetary bodies
         self.bodies = []
@@ -67,7 +76,9 @@ class Simulation:
         #self.font = pygame.font.SysFont("Roboto", 18)
         
     def start(self):
-
+        self.observedBody = self.bodies[0]
+        self.calculateEnergy()
+        self.initialEnergy = self.energy
         for body in self.bodies:
             calculateConditions(body, self.bodies)
             self.MASS += body.mass
@@ -91,14 +102,20 @@ class Simulation:
                 self.cycles += 1
                 self.handleEvents()
                 self.calculations()
-                if (time.time() - self.lastRender) >= 0.008:
+                if (time.time() - self.lastRender) >= self.renderTarget:
                     self.draw()
                     self.lastRender = time.time()
+                    if self.dataDump:
+                        self.calculateEnergy()
+                        energyError = (self.energy - self.initialEnergy) / self.initialEnergy
+                        self.energyData.addEntry(self.simTime, self.energy)
+                        self.relativeEnergyData.addEntry(self.simTime, abs(energyError))
 
                 if self.benchmark and self.simTime >= 150:
                     self.exit()
             except:
                 pass
+
 
     def handleEvents(self):
         scale_change_factor = 1.1
@@ -145,9 +162,10 @@ class Simulation:
             elif event.type == pygame.ACTIVEEVENT:
                 if event.gain == 1 and event.state == pygame.APPACTIVE: # windpw reopened
                     pygame.display.update()
-                    self.drawGrid()
+                    self.renderTarget = 0.008
+                    self.drawGrid()  
                 if event.gain == 0 and event.state == pygame.APPACTIVE: # window minimized (lower framerate / stop sim when it occurs)
-                    print("minimized")
+                    self.renderTarget = 0.032
 
 
     def addBody(self, body: Body):
@@ -272,14 +290,15 @@ class Simulation:
 
 
     def calculations(self):
-        targetDt = 0.008
         achievedDt = 0
 
-        while achievedDt < targetDt:
+        while achievedDt < self.renderTarget:
             dt = max(calculateTimeStep(self.bodies), 0.001) * self.timeScale  # make the physics independent of fps
             predictAll(self.bodies, dt)
-            for body in self.bodies:            
-                calculateHermite(body, self.bodies, dt)
+            for body in self.bodies:      
+                eps = calculateHermite(body, self.bodies, dt)
+                if body == self.observedBody:
+                    self.softeningData.addEntry(self.simTime, eps)
             achievedDt += dt
         self.simTime += achievedDt
 
@@ -289,14 +308,24 @@ class Simulation:
         screen_y = self.screenHeight // 2 + (body.position.y / 1) * self.dscale
         return (int(screen_x), int(screen_y))
 
+    
+    def calculateEnergy(self):
+        self.energy = 0
+        for body in self.bodies:
+            self.energy += body.calculateEnergy(self.bodies)
+
 
     def exit(self):
         self.running = 0
+        if self.dataDump:
+            self.energyData.dump('te')
+            self.relativeEnergyData.dump('tee')
+            self.softeningData.dump("tsp")
         pygame.quit()
 
 
 if __name__ == "__main__":
-    sim = Simulation()
+    sim = Simulation(dataDump=True)
     star = Body()
     star.setMass(1)
     star.setRadius(4.652e-3)
@@ -310,12 +339,28 @@ if __name__ == "__main__":
     planet.setVisualScale(10e9)
     planet.setColor((0,255,50))
 
-    print(planet.radius)
+    planet2 = Body(9.284e6) 
+    planet2.setMass(3.003e-6)
+    planet2.setPosition(Vector(np.array([2, 0, 0.0], dtype='float64'))) 
+    planet2.setVelocity(Vector(np.array([0, 0.0086, 0.0], dtype='float64')))
+    planet2.setVisualScale(10e9)
+    planet2.setColor((0,255,50))
+
+    planet3 = Body(9.284e6) 
+    planet3.setMass(3.003e-6)
+    planet3.setPosition(Vector(np.array([3, 0, 0.0], dtype='float64'))) 
+    planet3.setVelocity(Vector(np.array([0, 0.0043, 0.0], dtype='float64')))
+    planet3.setVisualScale(10e9)
+    planet3.setColor((0,255,50))
 
     sim.addBody(star)
     sim.addBody(planet)
+    sim.addBody(planet2)
+    sim.addBody(planet3)
 
     planet.energy = planet.calculateEnergy(sim.bodies)
 
     time.sleep(.2)
+    
     sim.start()
+    print("Average FPS:", int(sim.frames/sim.cycles))

@@ -9,8 +9,8 @@ from vectors import Vector
 from body import Body
 
 
-def orbit(benchmark=False):
-    sim = Simulation(benchmark)
+def orbit(benchmark=False, dataDump=False):
+    sim = Simulation(benchmark, dataDump)
     star = Body()
     star.setMass(1)
     star.setRadius(4.652e-3)
@@ -32,4 +32,4 @@ def orbit(benchmark=False):
     return (sim.frames/sim.cycles)
 
 if __name__ == "__main__":
-    orbit()
+    print("Average FPS:", orbit())

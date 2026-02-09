@@ -7,8 +7,8 @@ from main import Simulation
 from vectors import Vector
 from body import Body
 
-def figure8(benchmark=False):
-    sim = Simulation(benchmark)
+def figure8(benchmark=False, dataDump=False):
+    sim = Simulation(benchmark, dataDump)
 
     planet = Body(9.284e6) 
     planet.setMass(1)
@@ -44,4 +44,4 @@ def figure8(benchmark=False):
     return (sim.frames/sim.cycles)
 
 if __name__ == "__main__":
-    print(figure8())
+    print("Average FPS:", figure8(dataDump=True, benchmark=True))

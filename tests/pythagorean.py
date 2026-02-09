@@ -9,8 +9,8 @@ from vectors import Vector
 from body import Body
 
 
-def pythagorean(benchmark=False):
-    sim = Simulation(benchmark)
+def pythagorean(benchmark=False, dataDump=False):
+    sim = Simulation(benchmark, dataDump)
 
     planet = Body(9.284e6) 
     planet.setMass(3)
@@ -45,4 +45,4 @@ def pythagorean(benchmark=False):
     return (sim.frames/sim.cycles)
 
 if __name__ == "__main__":
-    pythagorean()
+    print("Average FPS:", pythagorean(dataDump=True))
