@@ -44,4 +44,4 @@ def figure8(benchmark=False, dataDump=False):
     return (sim.frames/sim.cycles)
 
 if __name__ == "__main__":
-    print("Average FPS:", figure8(dataDump=True, benchmark=True))
+    print("Average FPS:", figure8(dataDump=True))
